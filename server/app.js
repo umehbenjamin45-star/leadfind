@@ -26,9 +26,13 @@ async function request(url, options = {}) {
         "LEADFIND/1.0 (+https://github.com/umehbenjamin45-star/leadfind)",
       ...options.headers,
     },
-    signal: AbortSignal.timeout(40000),
+    signal: AbortSignal.timeout(options.timeoutMs || 21000),
   });
-  if (!r.ok) throw new Error(`Upstream HTTP ${r.status}`);
+  if (!r.ok) {
+    const error = new Error(`Upstream HTTP ${r.status}`);
+    error.status = r.status;
+    throw error;
+  }
   return r.json();
 }
 app.get("/api/health", (_, res) =>
@@ -78,6 +82,7 @@ app.post("/api/search", async (req, res) => {
   }
   busy = true;
   lastSearch = Date.now();
+  let stage = "location";
   try {
     let geo = geoCache.get(location.trim().toLowerCase());
     if (!geo) {
@@ -86,6 +91,7 @@ app.post("/api/search", async (req, res) => {
       lastGeo = Date.now();
       const places = await request(
         `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(location)}`,
+        { timeoutMs: 8000 },
       );
       if (!places.length)
         return res.status(404).json({
@@ -102,12 +108,31 @@ app.post("/api/search", async (req, res) => {
           `nwr(around:${radius},${lat},${lon})["${k}"${v === "*" ? "" : `="${v}"`} ]${k2 ? `["${k2}"="${v2}"]` : ""};`,
       )
       .join("");
-    const query = `[out:json][timeout:35];(${clauses});out center tags ${limit};`;
-    const data = await request("https://overpass-api.de/api/interpreter", {
+    stage = "business";
+    const query = `[out:json][timeout:18];(${clauses});out center tags ${limit};`;
+    const overpassOptions = {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ data: query }),
-    });
+    };
+    let data;
+    try {
+      data = await request(
+        "https://overpass-api.de/api/interpreter",
+        overpassOptions,
+      );
+    } catch (error) {
+      // One delayed retry for temporary gateway/service failures only.
+      // Never retry rate limits, access denials, invalid queries, or timeouts.
+      if (![502, 503, 504].includes(error.status)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      data = await request(
+        "https://overpass-api.de/api/interpreter",
+        overpassOptions,
+      );
+    }
+    if (!Array.isArray(data.elements) || data.remark)
+      throw new Error("Incomplete Overpass response");
     const result = {
       elements: data.elements.slice(0, limit),
       location: geo.display_name,
@@ -117,10 +142,16 @@ app.post("/api/search", async (req, res) => {
     if (cache.size > 100) cache.delete(cache.keys().next().value);
     res.json(result);
   } catch (error) {
-    console.error("Business search failed:", error.message);
+    console.error("Business search failed:", stage, error.message);
     res.status(503).json({
       error:
-        "Business data service is temporarily unavailable. Please try again shortly.",
+        stage === "location"
+          ? "Location search service is temporarily unavailable. Please try again shortly."
+          : "Business data service is temporarily unavailable. Please try again shortly.",
+      code:
+        stage === "location"
+          ? "LOCATION_SERVICE_UNAVAILABLE"
+          : "BUSINESS_SERVICE_UNAVAILABLE",
     });
   } finally {
     busy = false;

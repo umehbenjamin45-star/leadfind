@@ -272,16 +272,24 @@ function App() {
         <h3>
           {page === "Leads"
             ? "No saved leads yet"
-            : searched
-              ? "No businesses found"
-              : "Your next client could be around the corner"}
+            : error
+              ? "Search could not be completed"
+              : source.length
+                ? "No businesses match your filters"
+                : searched
+                  ? "No businesses found"
+                  : "Your next client could be around the corner"}
         </h3>
         <p>
           {page === "Leads"
             ? "Search for local businesses and save promising website opportunities."
-            : searched
-              ? "Try changing the location, category, filters, or search radius."
-              : "Choose a location and category to discover real local businesses."}
+            : error
+              ? "The search service failed. Wait a little, then try again; this does not mean there are no businesses."
+              : source.length
+                ? "Clear your filters to see the retrieved businesses."
+                : searched
+                  ? "No matching businesses are mapped within this radius. Try 10 km or another category; OSM coverage varies."
+                  : "Choose a location and category to discover real local businesses."}
         </p>
       </div>
     ) : view === "map" || page === "Map" ? (

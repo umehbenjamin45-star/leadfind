@@ -86,19 +86,56 @@ test("lead verification, notes, contact history, export and reload with explicit
   await expect(page.getByLabel("Research notes")).toHaveValue("Called owner.");
 });
 
-test('live Akure OSM search, filtering, map and CSV download',async({page})=>{
+test("live Akure OSM search, filtering, map and CSV download", async ({
+  page,
+}) => {
   test.setTimeout(65000);
-  await page.goto('http://127.0.0.1:5173');
-  await page.getByLabel('Business category',{exact:true}).fill('School');
-  await page.getByLabel('Results',{exact:true}).selectOption('25');
-  await page.getByLabel('Radius',{exact:true}).selectOption('10000');
-  await page.getByRole('button',{name:'Search businesses',exact:true}).click();
-  await expect(page.getByRole('button',{name:'Fiwasaye Grammar School',exact:true})).toBeVisible({timeout:60000});
-  await page.getByLabel('Website status',{exact:true}).selectOption('No Website Found');
-  const download=page.waitForEvent('download');
-  await page.getByRole('button',{name:'Export filtered',exact:true}).click();
+  await page.goto("http://127.0.0.1:5173");
+  await page.getByLabel("Business category", { exact: true }).fill("School");
+  await page.getByLabel("Results", { exact: true }).selectOption("25");
+  await page.getByLabel("Radius", { exact: true }).selectOption("10000");
+  await page
+    .getByRole("button", { name: "Search businesses", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Fiwasaye Grammar School", exact: true }),
+  ).toBeVisible({ timeout: 60000 });
+  await page
+    .getByLabel("Website status", { exact: true })
+    .selectOption("No Website Found");
+  const download = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Export filtered", exact: true })
+    .click();
   expect((await download).suggestedFilename()).toMatch(/leadfind.*\.csv/);
-  await page.getByRole('button',{name:'map view',exact:true}).click();
-  await expect(page.locator('.leaflet-container')).toBeVisible();
-  await expect(page.locator('.leaflet-interactive').first()).toBeVisible();
+  await page.getByRole("button", { name: "map view", exact: true }).click();
+  await expect(page.locator(".leaflet-container")).toBeVisible();
+  await expect(page.locator(".leaflet-interactive").first()).toBeVisible();
+});
+
+test("upstream failure is distinguished from a zero-result search", async ({
+  page,
+}) => {
+  await page.route("**/api/search", (route) =>
+    route.fulfill({
+      status: 503,
+      json: {
+        error:
+          "Business data service is temporarily unavailable. Please try again shortly.",
+      },
+    }),
+  );
+  await page.goto("http://127.0.0.1:5173");
+  await page
+    .getByRole("button", { name: "Search businesses", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "temporarily unavailable",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Search could not be completed" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "No businesses found", exact: true }),
+  ).toHaveCount(0);
 });
