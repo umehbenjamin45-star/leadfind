@@ -1,0 +1,48 @@
+{
+  "Restaurant": [["amenity", "restaurant"]],
+  "Bakery": [["shop", "bakery"]],
+  "Cafe": [["amenity", "cafe"]],
+  "Bar": [["amenity", "bar"]],
+  "Lounge": [
+    ["amenity", "bar"],
+    ["amenity", "nightclub"]
+  ],
+  "Hotel": [["tourism", "hotel"]],
+  "School": [["amenity", "school"]],
+  "Nursery School": [["amenity", "kindergarten"]],
+  "Primary School": [["amenity", "school", "isced:level", "1"]],
+  "Secondary School": [["amenity", "school", "isced:level", "2;3"]],
+  "Training Centre": [["amenity", "training"]],
+  "Gym": [["leisure", "fitness_centre"]],
+  "Fitness Centre": [["leisure", "fitness_centre"]],
+  "Salon": [["shop", "hairdresser"]],
+  "Barber": [["shop", "hairdresser", "hairdresser", "barber"]],
+  "Spa": [["leisure", "spa"]],
+  "Clinic": [
+    ["amenity", "clinic"],
+    ["healthcare", "clinic"]
+  ],
+  "Dentist": [["amenity", "dentist"]],
+  "Pharmacy": [["amenity", "pharmacy"]],
+  "Supermarket": [["shop", "supermarket"]],
+  "Grocery Store": [["shop", "convenience"]],
+  "Fashion Store": [["shop", "clothes"]],
+  "Clothing Store": [["shop", "clothes"]],
+  "Electronics Store": [["shop", "electronics"]],
+  "Furniture Store": [["shop", "furniture"]],
+  "Real Estate Agency": [["office", "estate_agent"]],
+  "Event Centre": [["amenity", "events_venue"]],
+  "Car Dealer": [["shop", "car"]],
+  "Car Repair": [["shop", "car_repair"]],
+  "Laundry": [["shop", "laundry"]],
+  "Printing Business": [
+    ["shop", "copyshop"],
+    ["craft", "printer"]
+  ],
+  "Photography Studio": [
+    ["shop", "photo"],
+    ["craft", "photographer"]
+  ],
+  "Travel Agency": [["shop", "travel_agency"]],
+  "Local Shop": [["shop", "*"]]
+}
